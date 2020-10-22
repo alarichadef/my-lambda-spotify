@@ -1,12 +1,12 @@
 const https = require('https');
 const querystring = require('querystring');
 
-async function build_image(url, type, params) {
+function build_image(url, type, params) {
     let options = {
         encoding: null,
         method: 'GET'
     };
-    let rep = await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         https.get(url, options, (res) => {
             let data = [];
             res.on('data', (d) => {
@@ -27,11 +27,10 @@ async function build_image(url, type, params) {
                     headers: { 'content-type': 'image/svg+xml', 'cache-control': 'no-cache' },
                     body: svg
                 };
-                return resolve(response);
+                resolve(response);
             });
         });
     });
-    return rep;
 }
 
 function currently_listening(json) {
@@ -45,7 +44,7 @@ function currently_listening(json) {
     }
 }
 
-async function top_artist(token) {
+function top_artist(token) {
     let options = {
         hostname: 'api.spotify.com',
         port: 443,
@@ -55,7 +54,7 @@ async function top_artist(token) {
             Authorization: 'Bearer ' + token
         }
     };
-    let rep = await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         https
             .get(options, (res) => {
                 let data = '';
@@ -66,17 +65,16 @@ async function top_artist(token) {
                     const json = JSON.parse(data);
                     const image_url = json.items[0].images[0].url;
                     const artist = json.items[0].name;
-                    return resolve(build_image(image_url, 0, { artist }));
+                    resolve(build_image(image_url, 0, { artist }));
                 });
             })
             .on('error', (e) => {
                 console.error('error =>', e);
             });
     });
-    return rep;
 }
 
-exports.handler = async (event) => {
+exports.handler = (event) => {
     const authorization = 'Basic ' + Buffer.from(`${process.env.clientId}:${process.env.clientSecret}`).toString('base64');
 
     const data = querystring.stringify({
@@ -94,7 +92,7 @@ exports.handler = async (event) => {
             Authorization: authorization
         }
     };
-    const response = await new Promise((resolve, reject) => {
+    const rep = new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
             let data = '';
             res.on('data', (_data) => {
@@ -139,5 +137,6 @@ exports.handler = async (event) => {
             console.error(error);
         });
     });
-    return response;
+    return rep;
 };
+
